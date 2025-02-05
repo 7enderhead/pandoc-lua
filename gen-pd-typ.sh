@@ -79,26 +79,33 @@ inotify_filter_string=$(printf -- "${inotify_prefix}%s " "${all_filters[@]}")
 current_path=$(pwd -P)
 script_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 paths=("${current_path}" "${script_path}")
+
 if typst_template=$(file_exists_in_paths "cE.typ.template" "${paths[@]}"); then
     template_string="--template=${typst_template}"
-else
-    template_string=""
+    inotify_template_string="-f ${typst_template}"
 fi
-typst_template="cE.typ.template"
 
+if typst_metadata=$(file_exists_in_paths "cE.typ.yaml" "${paths[@]}"); then
+    metadata_string="--metadata-file=${typst_metadata}"
+    inotify_metadata_string="-f ${typst_metadata}"
+fi
 
 base_name=$1
 md_file="${base_name}.md"
 typst_file="${base_name}.typ"
 
-pandoc_command="pandoc -f markdown+smart ${template_string} ${pandoc_filter_string} -o ${typst_file} ${md_file}"
-inotify_command="inotify-hookable -f ${md_file} -f ${typst_template} ${inotify_filter_string} -c \"${pandoc_command}\""
+pandoc_command="pandoc -f markdown+smart ${template_string} ${metadata_string} ${pandoc_filter_string} -o ${typst_file} ${md_file}"
+inotify_command="inotify-hookable -f ${md_file} ${inotify_template_string} ${inotify_metadata_string} ${inotify_filter_string} -c \"${pandoc_command}\""
 
 echo "Base file name: '${base_name}'"
 echo "Markdown file: '${md_file}'"
 echo "Typst file: '${typst_file}'"
+echo "Typst template file: '${typst_template}'"
+echo "Typst metadata file: '${typst_metadata}'"
 echo "Pandoc command: '${pandoc_command}'"
 echo "Inotify command: '${inotify_command}'"
+
+
 
 pandoc_watch() {
     eval ${pandoc_command} # initial run
