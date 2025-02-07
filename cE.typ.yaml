@@ -1,5 +1,8 @@
 ---
+colorlinks: true
 output:
   typst:
     section-numbering: "1.1"
+  pdf_document:
+    pandoc_args: ["--filter=pandoc-crossref"]
 ---

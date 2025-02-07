@@ -1,5 +1,8 @@
 $definitions.typst()$
 
+#show link: text.with(fill: blue)
+// #show link: underline.with(stroke: blue, offset: 4pt)
+
 #show terms: it => {
   it.children
     .map(child => [

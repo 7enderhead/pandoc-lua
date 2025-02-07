@@ -1,3 +1,31 @@
+ini_log() {
+    echo "Invocation of ${script_name} on $(date '+%Y-%m-%d %H:%M:%S')" > ${log_file}
+}
+
+log() {
+    local message="$1"
+    echo ${message} >> ${log_file}
+}
+
+log_array() {
+    local description="$1"
+    shift
+    local -a array=("$@")
+    log "${description}"
+    for element in "${array[@]}"; do
+        log "'${element}'"
+    done
+}
+
+current_path=$(pwd -P)
+parent_path=$(dirname "$PWD")
+script_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+script_name=$(basename "${BASH_SOURCE[0]}")
+log_file="${PWD}/${script_name}.log"
+pandoc_log_file="${PWD}/${script_name}.pandoc.log"
+
+ini_log
+
 # Function to parse LUA_PATH
 get_lua_paths() {
     local current_dir=$(pwd)
@@ -26,23 +54,25 @@ get_lua_files() {
 
     if [ -d "$dir" ]; then
         while IFS= read -r -d '' file; do
+            echo ${file}
             result_array+=("$file")
         done < <(find "$dir" -type f -name "${prefix}*.lua" -print0 2>/dev/null)
     fi
 }
 
 # Put all "cE-pdfilter"
-get_all_lua_filters(){
-    local -n paths=$1
-    readarray -t lua_paths < <(get_lua_paths)
-    for dir in "${lua_paths[@]}"; do
-        results=()
-        get_lua_files "${dir}" "cE-pdfilter-" results
-        paths+=("${results[@]}")
+get_all_lua_filters() {
+    local -n filter_search_paths=$1
+    local -n filter_results=$2
+    for path in "${filter_search_paths[@]}"; do
+        filters_in_path=()
+        get_lua_files "${path}" "cE-pdfilter-" filters_in_path
+        filter_results+=("${filters_in_path[@]}")
     done
+    # sort results alphabetically by filename
     IFS=$'\n'
-    readarray -t paths < <(
-        for path in "${paths[@]}"; do
+    readarray -t results < <(
+        for path in "${filter_results[@]}"; do
             echo "$(basename "$path")|$path"
         done | sort -f | cut -d'|' -f2-
     )
@@ -63,22 +93,31 @@ file_exists_in_paths() {
     return 1
 }
 
+prefix_array() {
+    local prefix="$1"
+    shift
+    local result=""
+    for element in "$@"; do
+        result+="${prefix}${element} "
+    done
+    echo "${result% }"
+}
+
 if [ $# -ne 1 ] || [ -z "$1" ]; then
     echo "Usage: $0 'basename of file to generate'" >&2
     exit 1
 fi
 
+paths=("${current_path}" "${parent_path}" "${script_path}" $(get_lua_paths))
+
+log_array "Search paths:" "${paths[@]}"
+
 declare -a all_filters
-get_all_lua_filters all_filters
+get_all_lua_filters paths all_filters
+log_array "Lua filters:" "${all_filters[@]}"
 
-pandoc_filter_prefix="--lua-filter "
-pandoc_filter_string=$(printf -- "${pandoc_filter_prefix}%s " "${all_filters[@]}")
-inotify_prefix="-f "
-inotify_filter_string=$(printf -- "${inotify_prefix}%s " "${all_filters[@]}")
-
-current_path=$(pwd -P)
-script_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-paths=("${current_path}" "${script_path}")
+pandoc_filter_string=$(prefix_array "--lua-filter " "${all_filters[@]}")
+inotify_filter_string=$(prefix_array "-f " "${all_filters[@]}")
 
 if typst_template=$(file_exists_in_paths "cE.typ.template" "${paths[@]}"); then
     template_string="--template=${typst_template}"
@@ -94,18 +133,16 @@ base_name=$1
 md_file="${base_name}.md"
 typst_file="${base_name}.typ"
 
-pandoc_command="pandoc -f markdown+smart ${template_string} ${metadata_string} ${pandoc_filter_string} -o ${typst_file} ${md_file}"
+pandoc_command="pandoc -f markdown+smart ${template_string} ${metadata_string} ${pandoc_filter_string} -o ${typst_file} ${md_file} &> ${pandoc_log_file}"
 inotify_command="inotify-hookable -f ${md_file} ${inotify_template_string} ${inotify_metadata_string} ${inotify_filter_string} -c \"${pandoc_command}\""
 
-echo "Base file name: '${base_name}'"
-echo "Markdown file: '${md_file}'"
-echo "Typst file: '${typst_file}'"
-echo "Typst template file: '${typst_template}'"
-echo "Typst metadata file: '${typst_metadata}'"
-echo "Pandoc command: '${pandoc_command}'"
-echo "Inotify command: '${inotify_command}'"
-
-
+log "Base file name: '${base_name}'"
+log "Markdown file: '${md_file}'"
+log "Typst file: '${typst_file}'"
+log "Typst template file: '${typst_template}'"
+log "Typst metadata file: '${typst_metadata}'"
+log "Pandoc command: '${pandoc_command}'"
+log "Inotify command: '${inotify_command}'"
 
 pandoc_watch() {
     eval ${pandoc_command} # initial run
