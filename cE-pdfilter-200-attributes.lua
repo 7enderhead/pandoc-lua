@@ -27,49 +27,58 @@ function Str(el)
 end
 
 function Span(el)
-    -- Check if the span has the class "name"
-    if el.classes:includes("name") then
-      local content = pandoc.utils.stringify(el.content)
+    
+  local content = pandoc.utils.stringify(el.content)
   
-      if FORMAT == "html" then
-        -- For HTML output, wrap in a <strong> tag
-        return pandoc.RawInline('html', '<strong>' .. content .. '</strong>')
-        
-      elseif FORMAT == "latex" then
-        -- For LaTeX output, wrap in \textbf{}
-        return pandoc.RawInline('latex', '\\textbf{\\[' .. content .. '\\]}')
-        
-      elseif FORMAT == "typst" then
-        -- For Typst output, wrap in \bold{}
-        return pandoc.RawInline('typst', '#text(weight: \"bold\")[\\[' .. content .. '\\]]')
-        
-      else
-        -- If format is not recognized, return the original element unchanged
-        return el
-      end
+  -- Check if the span has the class "name"
+  if el.classes:includes("name") then
+    if FORMAT == "html" then
+      -- For HTML output, wrap in a <strong> tag
+      return pandoc.RawInline('html', '<strong>' .. content .. '</strong>')
+      
+    elseif FORMAT == "latex" then
+      -- For LaTeX output, wrap in \textbf{}
+      return pandoc.RawInline('latex', '\\textbf{\\[' .. content .. '\\]}')
+      
+    elseif FORMAT == "typst" then
+      -- For Typst output, wrap in \bold{}
+      return pandoc.RawInline('typst', '#text(weight: \"bold\")[\\[' .. content .. '\\]]')
+      
+    else
+      -- If format is not recognized, return the original element unchanged
+      return el
     end
-  
-    if el.classes:includes("docref") then
-      local content = pandoc.utils.stringify(el.content)
-  
-      if FORMAT == "html" then
-        -- For HTML output, wrap in a <strong> tag
-        return pandoc.RawInline('html', '<em>\\"' .. content .. '\\"</em>')
-        
-      elseif FORMAT == "latex" then
-        -- For LaTeX output, wrap in \textbf{}
-        return pandoc.RawInline('latex', '\\textit{\\"' .. content .. '\\"}')
-        
-      elseif FORMAT == "typst" then
-        -- For Typst output, wrap in \bold{}
-        return pandoc.RawInline('typst', '#text(style: \"italic\")[\\"' .. content .. '\\"]')
-        
-      else
-        -- If format is not recognized, return the original element unchanged
-        return el
-      end
-    end
-
-    -- If no matching class, return the original element unchanged
-    return el
   end
+  
+  if el.classes:includes("docref") then
+    if FORMAT == "html" then
+      -- For HTML output, wrap in a <strong> tag
+      return pandoc.RawInline('html', '<em>\\"' .. content .. '\\"</em>')
+      
+    elseif FORMAT == "latex" then
+      -- For LaTeX output, wrap in \textbf{}
+      return pandoc.RawInline('latex', '\\textit{\\"' .. content .. '\\"}')
+      
+    elseif FORMAT == "typst" then
+      -- For Typst output, wrap in \bold{}
+      return pandoc.RawInline('typst', '#text(style: \"italic\")[\\"' .. content .. '\\"]')
+      
+    else
+      -- If format is not recognized, return the original element unchanged
+      return el
+    end
+  end
+  
+  -- produce link with identical target and text (without having to repeat it in the markdown input)
+  if el.classes:includes("link") then
+    return pandoc.Link(content, content)
+  end
+
+  -- If no matching class, return the original element unchanged
+  return el
+end
+
+function Link(el)
+  
+  return el
+end
