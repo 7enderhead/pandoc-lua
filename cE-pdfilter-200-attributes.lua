@@ -49,6 +49,26 @@ function Span(el)
       return el
     end
   end
+
+  -- Check if the span has the class "name"
+  if el.classes:includes("new") then
+    if FORMAT == "html" then
+      -- For HTML output, wrap in a <strong> tag
+      return pandoc.RawInline('html', '<strong>' .. content .. '</strong>')
+      
+    elseif FORMAT == "latex" then
+      -- For LaTeX output, wrap in \textbf{}
+      return pandoc.RawInline('latex', '\\textbf{\\' .. content .. '\\}')
+      
+    elseif FORMAT == "typst" then
+      -- For Typst output, wrap in \bold{}
+      return pandoc.RawInline('typst', '#text(weight: \"bold\")[' .. content .. ']')
+      
+    else
+      -- If format is not recognized, return the original element unchanged
+      return el
+    end
+  end
   
   if el.classes:includes("docref") then
     if FORMAT == "html" then
