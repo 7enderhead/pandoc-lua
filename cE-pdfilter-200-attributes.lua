@@ -2,6 +2,12 @@
 local replacements = {
     ["{{check}}"] = {
       all = "✔"
+    },
+    [",/"] = {
+      all = "✔"
+    },
+    ["->"] = {
+      all = "→"
     }
   }
 
