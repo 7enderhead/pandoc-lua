@@ -98,7 +98,7 @@ prefix_array() {
     shift
     local result=""
     for element in "$@"; do
-        result+="${prefix}${element} "
+        result+="${prefix}'${element}' "
     done
     echo "${result% }"
 }

@@ -75,7 +75,7 @@ function Span(el)
       return el
     end
   end
-  
+    
   if el.classes:includes("docref") then
     if FORMAT == "html" then
       -- For HTML output, wrap in a <strong> tag
@@ -95,6 +95,38 @@ function Span(el)
     end
   end
   
+  -- Tracking
+  
+  if el.classes:includes("added") then
+    if FORMAT == "html" then
+      -- For HTML output, wrap in a <strong> tag
+      return pandoc.RawInline('html', '<color:blue>' .. content .. '</color>')
+         
+    elseif FORMAT == "typst" then
+      -- For Typst output, wrap in \bold{}
+      return pandoc.RawInline("typst", "#underline(text(fill: blue)[" .. content .. "])")
+      
+    else
+      -- If format is not recognized, return the original element unchanged
+      return el
+    end
+  end
+
+  if el.classes:includes("deleted") then
+    if FORMAT == "html" then
+      -- For HTML output, wrap in a <strong> tag
+      return pandoc.RawInline('html', '<color:blue>' .. content .. '</color>')
+         
+    elseif FORMAT == "typst" then
+      -- For Typst output, wrap in \bold{}
+      return pandoc.RawInline("typst", "#strike(text(fill: red)[" .. content .. "])")
+      
+    else
+      -- If format is not recognized, return the original element unchanged
+      return el
+    end
+  end
+
   -- produce link with identical target and text (without having to repeat it in the markdown input)
   if el.classes:includes("link") then
     return pandoc.Link(content, content)
