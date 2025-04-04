@@ -133,7 +133,7 @@ base_name=$1
 md_file="${base_name}.md"
 typst_file="${base_name}.typ"
 
-pandoc_command="pandoc -f markdown+smart ${template_string} ${metadata_string} ${pandoc_filter_string} -o ${typst_file} ${md_file} &> ${pandoc_log_file}"
+pandoc_command="pandoc -f markdown+smart ${template_string} ${metadata_string} ${pandoc_filter_string} -o ${typst_file} ${md_file} &> \"${pandoc_log_file}\""
 inotify_command="inotify-hookable -f ${md_file} ${inotify_template_string} ${inotify_metadata_string} ${inotify_filter_string} -c \"${pandoc_command}\""
 
 log "Base file name: '${base_name}'"
@@ -145,12 +145,17 @@ log "Pandoc command: '${pandoc_command}'"
 log "Inotify command: '${inotify_command}'"
 
 pandoc_watch() {
+    log "Running initial pandoc command..."
     eval ${pandoc_command} # initial run
+    log "Running inotify..."
     eval ${inotify_command} # watching subsequent changes
 }
 
 typst_watch() {
-    typst watch ${typst_file}
+    typst_command="typst watch ${typst_file}"
+    log "Typst command: '${typst_command}'"
+    log "Running typst ..."
+    eval ${typst_command}
 }
 
 echo -n "Starting watch on pandoc files... "
